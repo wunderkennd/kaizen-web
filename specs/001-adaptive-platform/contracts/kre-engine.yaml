@@ -1,0 +1,218 @@
+openapi: 3.0.0
+info:
+  title: KRE Engine API
+  version: 1.0.0
+  description: Contextual Rule Engine for adaptive UI decisions
+
+paths:
+  /rules/evaluate:
+    post:
+      summary: Evaluate adaptation rules for given context
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                context:
+                  $ref: '#/components/schemas/Context'
+                ruleset_version:
+                  type: string
+                  description: Optional specific ruleset version
+      responses:
+        '200':
+          description: Rule evaluation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResult'
+        '400':
+          description: Invalid context data
+        '500':
+          description: Server error
+
+  /rules:
+    get:
+      summary: List all adaptation rules
+      parameters:
+        - in: query
+          name: active_only
+          schema:
+            type: boolean
+          description: Filter to active rules only
+        - in: query
+          name: rule_type
+          schema:
+            type: string
+            enum: [Rerank, Morph, Configure, Filter]
+      responses:
+        '200':
+          description: List of rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdaptationRule'
+
+    post:
+      summary: Create new adaptation rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdaptationRule'
+      responses:
+        '201':
+          description: Rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdaptationRule'
+
+  /rules/{rule_id}:
+    get:
+      summary: Get specific rule by ID
+      parameters:
+        - in: path
+          name: rule_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Rule details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdaptationRule'
+        '404':
+          description: Rule not found
+
+    put:
+      summary: Update adaptation rule
+      parameters:
+        - in: path
+          name: rule_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdaptationRule'
+      responses:
+        '200':
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdaptationRule'
+
+  /rules/conflicts:
+    post:
+      summary: Detect conflicts between rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rule_ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Conflict analysis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conflict'
+
+components:
+  schemas:
+    Context:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        pcm_stage:
+          type: string
+          enum: [Awareness, Attraction, Attachment, Allegiance]
+        expertise_level:
+          type: string
+          enum: [Curious, Casual, Enthusiast, Expert]
+        device_type:
+          type: string
+          enum: [Web, Mobile, TV]
+        time_constraint:
+          type: string
+          enum: [Limited, Normal, Extended]
+        custom_attributes:
+          type: object
+
+    AdaptationRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        rule_id:
+          type: string
+        name:
+          type: string
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 100
+        conditions:
+          type: object
+          description: IF conditions
+        directives:
+          type: object
+          description: THEN actions
+        rule_type:
+          type: string
+          enum: [Rerank, Morph, Configure, Filter]
+        is_active:
+          type: boolean
+        version:
+          type: integer
+
+    EvaluationResult:
+      type: object
+      properties:
+        applied_rules:
+          type: array
+          items:
+            type: string
+        directives:
+          type: object
+        conflicts_resolved:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conflict'
+        evaluation_time_ms:
+          type: integer
+
+    Conflict:
+      type: object
+      properties:
+        rule1_id:
+          type: string
+        rule2_id:
+          type: string
+        conflict_type:
+          type: string
+        resolution:
+          type: string
+          enum: [Priority, Override, Merge]

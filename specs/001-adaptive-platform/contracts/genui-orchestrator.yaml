@@ -1,0 +1,143 @@
+openapi: 3.0.0
+info:
+  title: GenUI Orchestrator API
+  version: 1.0.0
+  description: Dynamic UI generation and assembly service
+
+paths:
+  /ui/generate:
+    post:
+      summary: Generate adaptive UI configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                context:
+                  $ref: '#/components/schemas/ContextSnapshot'
+      responses:
+        '200':
+          description: Generated UI configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UIConfiguration'
+        '400':
+          description: Invalid request
+        '500':
+          description: Server error
+
+  /ui/rerank:
+    post:
+      summary: Rerank UI components based on performance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ui_config_id:
+                  type: string
+                  format: uuid
+                performance_data:
+                  type: object
+      responses:
+        '200':
+          description: Reranked configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UIConfiguration'
+
+  /ui/morph:
+    post:
+      summary: Morph UI components based on context changes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_config_id:
+                  type: string
+                  format: uuid
+                context_changes:
+                  type: object
+      responses:
+        '200':
+          description: Morphed configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UIConfiguration'
+
+components:
+  schemas:
+    ContextSnapshot:
+      type: object
+      properties:
+        device_type:
+          type: string
+          enum: [Web, Mobile, TV]
+        time_constraint:
+          type: string
+          enum: [Limited, Normal, Extended]
+        location:
+          type: string
+        event_context:
+          type: string
+        network_quality:
+          type: string
+          enum: [Poor, Fair, Good, Excellent]
+
+    UIConfiguration:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Section'
+        density:
+          type: string
+          enum: [Comfortable, Compact]
+        metadata_verbosity:
+          type: string
+          enum: [Minimal, Standard, Detailed]
+        theme:
+          type: string
+        assembly_time_ms:
+          type: integer
+
+    Section:
+      type: object
+      properties:
+        index:
+          type: integer
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentInstance'
+
+    ComponentInstance:
+      type: object
+      properties:
+        component_id:
+          type: string
+          format: uuid
+        presentation_type:
+          type: string
+        importance_score:
+          type: number
+          format: float
+        properties:
+          type: object

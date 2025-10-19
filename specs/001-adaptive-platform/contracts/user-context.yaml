@@ -1,0 +1,267 @@
+openapi: 3.0.0
+info:
+  title: User Context Service API
+  version: 1.0.0
+  description: User profile and context management service
+
+paths:
+  /context/capture:
+    post:
+      summary: Capture user context snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                device_type:
+                  type: string
+                  enum: [Web, Mobile, TV]
+                device_id:
+                  type: string
+                location:
+                  type: string
+                active_content_id:
+                  type: string
+                  format: uuid
+                time_constraint:
+                  type: string
+                  enum: [Limited, Normal, Extended]
+                event_context:
+                  type: string
+      responses:
+        '201':
+          description: Context captured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextSnapshot'
+        '400':
+          description: Invalid context data
+        '500':
+          description: Server error
+
+  /users/{user_id}/profile:
+    get:
+      summary: Get user profile
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '404':
+          description: User not found
+
+    patch:
+      summary: Update user profile
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+  /users/{user_id}/pcm/advance:
+    post:
+      summary: Advance user's PCM stage
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                new_stage:
+                  type: string
+                  enum: [Awareness, Attraction, Attachment, Allegiance]
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: PCM stage advanced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PCMUpdate'
+
+  /users/{user_id}/mastery:
+    get:
+      summary: Get user's mastery tracks
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Mastery tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MasteryTrack'
+
+components:
+  schemas:
+    ContextSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        device_type:
+          type: string
+          enum: [Web, Mobile, TV]
+        device_id:
+          type: string
+        location:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        session_id:
+          type: string
+          format: uuid
+        active_content_id:
+          type: string
+          format: uuid
+        time_constraint:
+          type: string
+          enum: [Limited, Normal, Extended]
+        event_context:
+          type: string
+        inferred_intent:
+          type: string
+        network_quality:
+          type: string
+          enum: [Poor, Fair, Good, Excellent]
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        pcm_stage:
+          type: string
+          enum: [Awareness, Attraction, Attachment, Allegiance]
+        expertise_level:
+          type: string
+          enum: [Curious, Casual, Enthusiast, Expert]
+        preferences:
+          type: object
+        octalysis_scores:
+          type: object
+        device_preferences:
+          type: object
+        privacy_settings:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UserProfileUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+        preferences:
+          type: object
+        privacy_settings:
+          type: object
+
+    PCMUpdate:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        previous_stage:
+          type: string
+        new_stage:
+          type: string
+        advanced_at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+
+    MasteryTrack:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        track_name:
+          type: string
+        track_type:
+          type: string
+          enum: [Genre, Creator, Era, Theme]
+        current_level:
+          type: integer
+        total_levels:
+          type: integer
+        progress_points:
+          type: integer
+        achievements:
+          type: array
+          items:
+            type: object
+        unlocked_features:
+          type: array
+          items:
+            type: string
+        started_at:
+          type: string
+          format: date-time

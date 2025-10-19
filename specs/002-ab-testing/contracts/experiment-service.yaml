@@ -1,0 +1,402 @@
+openapi: 3.0.0
+info:
+  title: Experiment Service API
+  version: 1.0.0
+  description: A/B testing and experimentation platform
+
+paths:
+  /experiments:
+    get:
+      summary: List all experiments
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [Draft, Running, Paused, Completed, Archived]
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of experiments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  experiments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Experiment'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+
+    post:
+      summary: Create new experiment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExperimentCreate'
+      responses:
+        '201':
+          description: Experiment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+
+  /experiments/{experiment_id}:
+    get:
+      summary: Get experiment details
+      parameters:
+        - in: path
+          name: experiment_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Experiment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+        '404':
+          description: Experiment not found
+
+    patch:
+      summary: Update experiment
+      parameters:
+        - in: path
+          name: experiment_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExperimentUpdate'
+      responses:
+        '200':
+          description: Experiment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+
+  /experiments/{experiment_id}/status:
+    post:
+      summary: Change experiment status
+      parameters:
+        - in: path
+          name: experiment_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [Running, Paused, Completed]
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+
+  /assignments:
+    post:
+      summary: Get experiment assignment for user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                device_id:
+                  type: string
+                attributes:
+                  type: object
+                  description: User attributes for targeting
+      responses:
+        '200':
+          description: User assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Assignment'
+
+  /experiments/{experiment_id}/results:
+    get:
+      summary: Get experiment results
+      parameters:
+        - in: path
+          name: experiment_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: metric
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Experiment results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Result'
+
+  /feature-flags:
+    get:
+      summary: List feature flags
+      responses:
+        '200':
+          description: List of feature flags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeatureFlag'
+
+    post:
+      summary: Create feature flag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureFlag'
+      responses:
+        '201':
+          description: Feature flag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureFlag'
+
+  /feature-flags/{flag_key}/evaluate:
+    post:
+      summary: Evaluate feature flag for user
+      parameters:
+        - in: path
+          name: flag_key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                attributes:
+                  type: object
+      responses:
+        '200':
+          description: Flag evaluation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                  value:
+                    type: any
+                  variant:
+                    type: string
+
+components:
+  schemas:
+    Experiment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [AB, Feature]
+        status:
+          type: string
+          enum: [Draft, Running, Paused, Completed, Archived]
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variant'
+        traffic_allocation:
+          type: object
+        success_metrics:
+          type: object
+        targeting_rules:
+          type: object
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    ExperimentCreate:
+      type: object
+      required:
+        - name
+        - variants
+        - success_metrics
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [AB, Feature]
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variant'
+        traffic_allocation:
+          type: object
+        success_metrics:
+          type: object
+        targeting_rules:
+          type: object
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+
+    ExperimentUpdate:
+      type: object
+      properties:
+        description:
+          type: string
+        traffic_allocation:
+          type: object
+        targeting_rules:
+          type: object
+        end_date:
+          type: string
+          format: date-time
+
+    Variant:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        configuration:
+          type: object
+
+    Assignment:
+      type: object
+      properties:
+        experiment_id:
+          type: string
+          format: uuid
+        experiment_name:
+          type: string
+        variant:
+          type: string
+        assigned_at:
+          type: string
+          format: date-time
+
+    Result:
+      type: object
+      properties:
+        variant:
+          type: string
+        metric_name:
+          type: string
+        sample_size:
+          type: integer
+        conversions:
+          type: integer
+        mean_value:
+          type: number
+        confidence_interval:
+          type: object
+          properties:
+            lower:
+              type: number
+            upper:
+              type: number
+        p_value:
+          type: number
+        lift:
+          type: number
+
+    FeatureFlag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [Boolean, String, Number, JSON]
+        default_value:
+          type: any
+        enabled:
+          type: boolean
+        rollout_percentage:
+          type: number
+        targeting_rules:
+          type: object
+        experiment_id:
+          type: string
+          format: uuid

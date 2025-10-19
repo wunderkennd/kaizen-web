@@ -1,0 +1,400 @@
+openapi: 3.0.0
+info:
+  title: Bandit Service API
+  version: 1.0.0
+  description: Multi-armed bandit and Bayesian optimization service
+
+paths:
+  /bandits:
+    get:
+      summary: List all bandit configurations
+      parameters:
+        - in: query
+          name: experiment_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: active_only
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of bandit configurations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BanditConfiguration'
+
+    post:
+      summary: Create new bandit configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BanditConfigurationCreate'
+      responses:
+        '201':
+          description: Bandit created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BanditConfiguration'
+
+  /bandits/{bandit_id}/allocate:
+    post:
+      summary: Get next arm allocation
+      parameters:
+        - in: path
+          name: bandit_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                context:
+                  type: object
+                  description: Contextual features for decision
+                user_id:
+                  type: string
+      responses:
+        '200':
+          description: Arm allocation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Allocation'
+
+  /bandits/{bandit_id}/update:
+    post:
+      summary: Update bandit with observed reward
+      parameters:
+        - in: path
+          name: bandit_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                allocation_id:
+                  type: string
+                  format: uuid
+                reward:
+                  type: number
+                  format: float
+      responses:
+        '200':
+          description: Update recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  updated_probabilities:
+                    type: object
+
+  /optimization/bayesian:
+    post:
+      summary: Create Bayesian optimization model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BayesianModelCreate'
+      responses:
+        '201':
+          description: Model created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BayesianModel'
+
+  /optimization/bayesian/{model_id}/suggest:
+    get:
+      summary: Get next point to evaluate
+      parameters:
+        - in: path
+          name: model_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: n_points
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Suggested evaluation points
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SuggestedPoint'
+
+  /optimization/bayesian/{model_id}/observe:
+    post:
+      summary: Add observation to model
+      parameters:
+        - in: path
+          name: model_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                point:
+                  type: object
+                  description: Parameter values
+                value:
+                  type: number
+                  format: float
+                  description: Observed objective value
+      responses:
+        '200':
+          description: Observation added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posterior_updated:
+                    type: boolean
+                  best_value:
+                    type: number
+                  convergence_metric:
+                    type: number
+
+  /statistics/cuped:
+    post:
+      summary: Apply CUPED variance reduction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                experiment_id:
+                  type: string
+                  format: uuid
+                metric:
+                  type: string
+                pre_experiment_data:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: CUPED-adjusted results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CUPEDResult'
+
+components:
+  schemas:
+    BanditConfiguration:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        experiment_id:
+          type: string
+          format: uuid
+        algorithm:
+          type: string
+          enum: [EpsilonGreedy, ThompsonSampling, UCB, Contextual]
+        exploration_rate:
+          type: number
+          format: float
+        context_features:
+          type: object
+        arm_definitions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArmDefinition'
+        update_frequency:
+          type: integer
+        is_active:
+          type: boolean
+
+    BanditConfigurationCreate:
+      type: object
+      required:
+        - experiment_id
+        - algorithm
+        - arm_definitions
+      properties:
+        experiment_id:
+          type: string
+          format: uuid
+        algorithm:
+          type: string
+          enum: [EpsilonGreedy, ThompsonSampling, UCB, Contextual]
+        exploration_rate:
+          type: number
+          format: float
+          default: 0.1
+        context_features:
+          type: object
+        arm_definitions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArmDefinition'
+
+    ArmDefinition:
+      type: object
+      properties:
+        arm_id:
+          type: string
+        configuration:
+          type: object
+        prior:
+          type: object
+          properties:
+            alpha:
+              type: number
+            beta:
+              type: number
+
+    Allocation:
+      type: object
+      properties:
+        allocation_id:
+          type: string
+          format: uuid
+        selected_arm:
+          type: string
+        probability:
+          type: number
+          format: float
+        all_probabilities:
+          type: object
+        context_used:
+          type: object
+
+    BayesianModel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        experiment_id:
+          type: string
+          format: uuid
+        model_type:
+          type: string
+          enum: [GaussianProcess, BayesianLinear, DirichletProcess]
+        hyperparameters:
+          type: object
+        acquisition_function:
+          type: string
+          enum: [ExpectedImprovement, UCB, ProbabilityImprovement]
+        parameter_space:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterDefinition'
+        convergence_metrics:
+          type: object
+
+    BayesianModelCreate:
+      type: object
+      required:
+        - experiment_id
+        - model_type
+        - parameter_space
+      properties:
+        experiment_id:
+          type: string
+          format: uuid
+        model_type:
+          type: string
+          enum: [GaussianProcess, BayesianLinear, DirichletProcess]
+        acquisition_function:
+          type: string
+          enum: [ExpectedImprovement, UCB, ProbabilityImprovement]
+        parameter_space:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterDefinition'
+
+    ParameterDefinition:
+      type: object
+      properties:
+        name:
+          type: string
+        bounds:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+        scale:
+          type: string
+          enum: [linear, log]
+
+    SuggestedPoint:
+      type: object
+      properties:
+        parameters:
+          type: object
+        acquisition_value:
+          type: number
+        expected_improvement:
+          type: number
+        uncertainty:
+          type: number
+
+    CUPEDResult:
+      type: object
+      properties:
+        original_variance:
+          type: number
+        reduced_variance:
+          type: number
+        variance_reduction:
+          type: number
+        adjusted_results:
+          type: array
+          items:
+            type: object
+            properties:
+              variant:
+                type: string
+              original_mean:
+                type: number
+              adjusted_mean:
+                type: number
+              confidence_interval:
+                type: object
