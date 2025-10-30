@@ -1,0 +1,605 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: gcr.io
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
+jobs:
+  # Job 1: Code Quality and Security
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/frontend/package-lock.json'
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache-dependency-path: |
+            services/genui-orchestrator/go.sum
+            services/user-context-service/go.sum
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          override: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # Frontend linting and security
+      - name: Install Frontend Dependencies
+        working-directory: services/frontend
+        run: npm ci
+
+      - name: Frontend Lint
+        working-directory: services/frontend
+        run: npm run lint
+
+      - name: Frontend Type Check
+        working-directory: services/frontend
+        run: npm run type-check
+
+      - name: Frontend Security Audit
+        working-directory: services/frontend
+        run: npm audit --audit-level=moderate
+
+      # Go linting and security
+      - name: Go Mod Verify - GenUI
+        working-directory: services/genui-orchestrator
+        run: go mod verify
+
+      - name: Go Mod Verify - User Context
+        working-directory: services/user-context-service
+        run: go mod verify
+
+      - name: Go Vet - GenUI
+        working-directory: services/genui-orchestrator
+        run: go vet ./...
+
+      - name: Go Vet - User Context
+        working-directory: services/user-context-service
+        run: go vet ./...
+
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Go Lint - GenUI
+        working-directory: services/genui-orchestrator
+        run: golangci-lint run --timeout=5m
+
+      - name: Go Lint - User Context
+        working-directory: services/user-context-service
+        run: golangci-lint run --timeout=5m
+
+      # Rust linting and security
+      - name: Rust Format Check - KRE Engine
+        working-directory: services/kre-engine
+        run: cargo fmt --all -- --check
+
+      - name: Rust Format Check - Streaming Adapter
+        working-directory: services/streaming-adapter
+        run: cargo fmt --all -- --check
+
+      - name: Rust Clippy - KRE Engine
+        working-directory: services/kre-engine
+        run: cargo clippy -- -D warnings
+
+      - name: Rust Clippy - Streaming Adapter
+        working-directory: services/streaming-adapter
+        run: cargo clippy -- -D warnings
+
+      - name: Rust Security Audit - KRE Engine
+        working-directory: services/kre-engine
+        run: |
+          cargo install cargo-audit
+          cargo audit
+
+      - name: Rust Security Audit - Streaming Adapter
+        working-directory: services/streaming-adapter
+        run: cargo audit
+
+      # Python linting and security
+      - name: Install Python Dependencies - PCM Classifier
+        working-directory: services/pcm-classifier
+        run: |
+          pip install -r requirements.txt
+          pip install flake8 black isort safety
+
+      - name: Install Python Dependencies - AI Sommelier
+        working-directory: services/ai-sommelier-service
+        run: |
+          pip install -r requirements.txt
+          pip install flake8 black isort safety
+
+      - name: Python Format Check - PCM Classifier
+        working-directory: services/pcm-classifier
+        run: |
+          black --check .
+          isort --check-only .
+
+      - name: Python Format Check - AI Sommelier
+        working-directory: services/ai-sommelier-service
+        run: |
+          black --check .
+          isort --check-only .
+
+      - name: Python Lint - PCM Classifier
+        working-directory: services/pcm-classifier
+        run: flake8 .
+
+      - name: Python Lint - AI Sommelier
+        working-directory: services/ai-sommelier-service
+        run: flake8 .
+
+      - name: Python Security Check - PCM Classifier
+        working-directory: services/pcm-classifier
+        run: safety check
+
+      - name: Python Security Check - AI Sommelier
+        working-directory: services/ai-sommelier-service
+        run: safety check
+
+      # General security scanning
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Job 2: Database Migration Tests
+  database-tests:
+    name: Database Migration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Test Database Migrations
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: test_db
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+        run: |
+          # Test forward migrations
+          chmod +x scripts/db/migrate.sh
+          ./scripts/db/migrate.sh up
+          
+          # Test migration status
+          ./scripts/db/migrate.sh status
+          
+          # Test rollback migrations
+          ./scripts/db/migrate.sh down 1
+          
+          # Test forward migration again
+          ./scripts/db/migrate.sh up
+
+  # Job 3: Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        service: [frontend, genui-orchestrator, user-context-service, kre-engine, streaming-adapter, pcm-classifier, ai-sommelier-service]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: matrix.service == 'frontend'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'services/${{ matrix.service }}/package-lock.json'
+
+      - name: Setup Go
+        if: contains(fromJson('["genui-orchestrator", "user-context-service"]'), matrix.service)
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache-dependency-path: 'services/${{ matrix.service }}/go.sum'
+
+      - name: Setup Rust
+        if: contains(fromJson('["kre-engine", "streaming-adapter"]'), matrix.service)
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Setup Python
+        if: contains(fromJson('["pcm-classifier", "ai-sommelier-service"]'), matrix.service)
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      # Frontend tests
+      - name: Install Frontend Dependencies
+        if: matrix.service == 'frontend'
+        working-directory: services/${{ matrix.service }}
+        run: npm ci
+
+      - name: Run Frontend Tests
+        if: matrix.service == 'frontend'
+        working-directory: services/${{ matrix.service }}
+        run: npm test -- --coverage --watchAll=false
+
+      - name: Upload Frontend Coverage
+        if: matrix.service == 'frontend'
+        uses: codecov/codecov-action@v3
+        with:
+          file: services/${{ matrix.service }}/coverage/lcov.info
+          flags: frontend
+
+      # Go tests
+      - name: Run Go Tests
+        if: contains(fromJson('["genui-orchestrator", "user-context-service"]'), matrix.service)
+        working-directory: services/${{ matrix.service }}
+        run: |
+          go mod download
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload Go Coverage
+        if: contains(fromJson('["genui-orchestrator", "user-context-service"]'), matrix.service)
+        uses: codecov/codecov-action@v3
+        with:
+          file: services/${{ matrix.service }}/coverage.out
+          flags: ${{ matrix.service }}
+
+      # Rust tests
+      - name: Run Rust Tests
+        if: contains(fromJson('["kre-engine", "streaming-adapter"]'), matrix.service)
+        working-directory: services/${{ matrix.service }}
+        run: |
+          cargo test --verbose
+          cargo tarpaulin --out Xml --output-dir coverage
+
+      - name: Upload Rust Coverage
+        if: contains(fromJson('["kre-engine", "streaming-adapter"]'), matrix.service)
+        uses: codecov/codecov-action@v3
+        with:
+          file: services/${{ matrix.service }}/coverage/cobertura.xml
+          flags: ${{ matrix.service }}
+
+      # Python tests
+      - name: Install Python Dependencies
+        if: contains(fromJson('["pcm-classifier", "ai-sommelier-service"]'), matrix.service)
+        working-directory: services/${{ matrix.service }}
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run Python Tests
+        if: contains(fromJson('["pcm-classifier", "ai-sommelier-service"]'), matrix.service)
+        working-directory: services/${{ matrix.service }}
+        run: pytest --cov=. --cov-report=xml --cov-report=html
+
+      - name: Upload Python Coverage
+        if: contains(fromJson('["pcm-classifier", "ai-sommelier-service"]'), matrix.service)
+        uses: codecov/codecov-action@v3
+        with:
+          file: services/${{ matrix.service }}/coverage.xml
+          flags: ${{ matrix.service }}
+
+  # Job 4: Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [unit-tests, database-tests]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: kaizen
+          POSTGRES_DB: kaizen_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Setup Test Environment
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: kaizen_db
+          DB_USER: kaizen
+          DB_PASSWORD: test_password
+        run: |
+          # Run database migrations
+          chmod +x scripts/db/migrate.sh
+          ./scripts/db/migrate.sh up
+
+      - name: Build Docker Images
+        run: |
+          docker-compose -f docker-compose.yml build \
+            --build-arg NODE_ENV=test \
+            --build-arg ENV=test
+
+      - name: Run Integration Tests
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgres://kaizen:test_password@localhost:5432/kaizen_db
+          REDIS_URL: redis://localhost:6379
+        run: |
+          # Start services in test mode
+          docker-compose -f docker-compose.yml up -d \
+            --scale frontend=1 \
+            --scale genui-orchestrator=1 \
+            --scale kre-engine=1 \
+            --scale user-context=1
+          
+          # Wait for services to be ready
+          sleep 30
+          
+          # Run API health checks
+          curl -f http://localhost:4000/health || exit 1
+          curl -f http://localhost:4001/health || exit 1
+          curl -f http://localhost:4002/health || exit 1
+          
+          # Run integration test suite
+          docker-compose exec -T genui-orchestrator go test ./tests/integration/... -v
+          
+          # Cleanup
+          docker-compose down
+
+  # Job 5: Build and Push Docker Images
+  build-images:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [code-quality, unit-tests]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    strategy:
+      matrix:
+        service: [frontend, genui-orchestrator, user-context-service, kre-engine, streaming-adapter, pcm-classifier, ai-sommelier-service]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for GCR
+        run: |
+          gcloud auth configure-docker
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: services/${{ matrix.service }}
+          file: services/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+  # Job 6: E2E Tests
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [integration-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        working-directory: services/frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Setup Test Environment with Docker Compose
+        run: |
+          docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
+          
+          # Wait for services to be fully ready
+          timeout 120s bash -c 'until curl -f http://localhost:3000/api/health; do sleep 5; done'
+
+      - name: Run E2E Tests
+        working-directory: services/frontend
+        run: |
+          npx playwright test
+
+      - name: Upload E2E Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: services/frontend/test-results/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down
+
+  # Job 7: Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [integration-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup K6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Setup Test Environment
+        run: |
+          docker-compose -f docker-compose.yml up -d
+          timeout 120s bash -c 'until curl -f http://localhost:4000/health; do sleep 5; done'
+
+      - name: Run Performance Tests
+        run: |
+          cd benchmarks
+          k6 run --out json=results.json performance-test.js
+
+      - name: Upload Performance Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-test-results
+          path: benchmarks/results.json
+          retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose down
+
+  # Job 8: Security Scan
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build-images]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    strategy:
+      matrix:
+        service: [frontend, genui-orchestrator, user-context-service, kre-engine, streaming-adapter, pcm-classifier, ai-sommelier-service]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner on image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ matrix.service }}:${{ github.ref_name }}-${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-${{ matrix.service }}-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-${{ matrix.service }}-results.sarif'

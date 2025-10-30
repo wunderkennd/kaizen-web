@@ -6,11 +6,22 @@
 set -euo pipefail
 
 # Configuration
-DB_HOST="${DB_HOST:-localhost}"
-DB_PORT="${DB_PORT:-5432}"
-DB_NAME="${DB_NAME:-kaizen_db}"
-DB_USER="${DB_USER:-kaizen}"
-DB_PASSWORD="${DB_PASSWORD:-kaizen_dev_password}"
+if [ -n "${DATABASE_URL:-}" ]; then
+    # Parse DATABASE_URL if provided (for CI/CD)
+    # Format: postgresql://user:password@host:port/database
+    DB_USER=$(echo $DATABASE_URL | sed -n 's/.*:\/\/\([^:]*\).*/\1/p')
+    DB_PASSWORD=$(echo $DATABASE_URL | sed -n 's/.*:\/\/[^:]*:\([^@]*\).*/\1/p')
+    DB_HOST=$(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\).*/\1/p')
+    DB_PORT=$(echo $DATABASE_URL | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
+    DB_NAME=$(echo $DATABASE_URL | sed -n 's/.*\/\([^?]*\).*/\1/p')
+else
+    # Use individual environment variables
+    DB_HOST="${DB_HOST:-localhost}"
+    DB_PORT="${DB_PORT:-5432}"
+    DB_NAME="${DB_NAME:-kaizen_db}"
+    DB_USER="${DB_USER:-kaizen}"
+    DB_PASSWORD="${DB_PASSWORD:-kaizen_dev_password}"
+fi
 MIGRATIONS_DIR="${MIGRATIONS_DIR:-$(dirname "$0")/migrations}"
 SCHEMA_MIGRATIONS_TABLE="schema_migrations"
 
