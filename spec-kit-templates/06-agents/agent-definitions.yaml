@@ -1,0 +1,291 @@
+# Agent Definitions for Project-Specific Automation
+# These agents can be created based on project needs
+
+agents:
+  # Core Development Agents
+  - id: backend-specialist
+    name: "Backend Development Specialist"
+    description: "Handles backend service implementation, API design, and database operations"
+    capabilities:
+      - "Implement REST/GraphQL/gRPC APIs"
+      - "Design and optimize database schemas"
+      - "Create data models and migrations"
+      - "Implement business logic and validation"
+      - "Set up caching strategies"
+    recommended_for:
+      - "Projects with complex backend requirements"
+      - "Microservices architectures"
+      - "Data-intensive applications"
+    tools_required:
+      - "Language-specific tools (Rust/Go/Python)"
+      - "Database clients"
+      - "API testing tools"
+    epic_associations:
+      - "data-layer"
+      - "core-services"
+      - "api-development"
+
+  - id: frontend-specialist
+    name: "Frontend Development Specialist"
+    description: "Focuses on UI/UX implementation, component development, and user interactions"
+    capabilities:
+      - "Implement React/Next.js components"
+      - "Create responsive layouts"
+      - "Manage state and data flow"
+      - "Optimize performance and accessibility"
+      - "Implement design systems"
+    recommended_for:
+      - "User-facing applications"
+      - "Complex UI requirements"
+      - "Design system implementations"
+    tools_required:
+      - "Node.js and npm/yarn"
+      - "Frontend frameworks"
+      - "CSS preprocessors"
+    epic_associations:
+      - "frontend"
+      - "ui-components"
+      - "user-experience"
+
+  - id: devops-engineer
+    name: "DevOps & Infrastructure Engineer"
+    description: "Manages CI/CD, cloud infrastructure, and deployment automation"
+    capabilities:
+      - "Create Terraform configurations"
+      - "Set up CI/CD pipelines"
+      - "Configure cloud services"
+      - "Implement monitoring and logging"
+      - "Manage secrets and security"
+    recommended_for:
+      - "Cloud-native applications"
+      - "Projects requiring automation"
+      - "Multi-environment deployments"
+    tools_required:
+      - "Terraform"
+      - "Docker"
+      - "Cloud CLI tools"
+      - "GitHub Actions/Cloud Build"
+    epic_associations:
+      - "infrastructure"
+      - "cicd"
+      - "operations"
+
+  - id: testing-specialist
+    name: "Testing & QA Specialist"
+    description: "Implements comprehensive testing strategies and quality assurance"
+    capabilities:
+      - "Write unit and integration tests"
+      - "Create end-to-end test suites"
+      - "Implement contract testing"
+      - "Set up test automation"
+      - "Generate test reports and coverage"
+    recommended_for:
+      - "TDD/BDD projects"
+      - "High-reliability applications"
+      - "API-first development"
+    tools_required:
+      - "Testing frameworks"
+      - "Mocking libraries"
+      - "Coverage tools"
+    epic_associations:
+      - "testing"
+      - "quality-assurance"
+
+  - id: security-specialist
+    name: "Security & Compliance Specialist"
+    description: "Handles security implementation, vulnerability assessment, and compliance"
+    capabilities:
+      - "Implement authentication/authorization"
+      - "Conduct security audits"
+      - "Set up security scanning"
+      - "Manage secrets and encryption"
+      - "Ensure compliance standards"
+    recommended_for:
+      - "Applications handling sensitive data"
+      - "Regulated industries"
+      - "Public-facing APIs"
+    tools_required:
+      - "Security scanning tools"
+      - "Secret management systems"
+      - "Compliance checkers"
+    epic_associations:
+      - "security"
+      - "compliance"
+      - "authentication"
+
+  - id: data-engineer
+    name: "Data & Analytics Engineer"
+    description: "Manages data pipelines, analytics, and machine learning operations"
+    capabilities:
+      - "Design data pipelines"
+      - "Implement ETL/ELT processes"
+      - "Set up data warehousing"
+      - "Create analytics dashboards"
+      - "Deploy ML models"
+    recommended_for:
+      - "Data-driven applications"
+      - "ML/AI projects"
+      - "Analytics platforms"
+    tools_required:
+      - "Data processing frameworks"
+      - "ML libraries"
+      - "Analytics tools"
+    epic_associations:
+      - "data-pipeline"
+      - "analytics"
+      - "machine-learning"
+
+  - id: documentation-specialist
+    name: "Documentation & Technical Writing Specialist"
+    description: "Creates comprehensive documentation, API specs, and user guides"
+    capabilities:
+      - "Write technical documentation"
+      - "Create API documentation"
+      - "Generate architecture diagrams"
+      - "Maintain README files"
+      - "Create user guides"
+    recommended_for:
+      - "Open source projects"
+      - "API-first platforms"
+      - "Enterprise applications"
+    tools_required:
+      - "Documentation generators"
+      - "Diagram tools"
+      - "Markdown editors"
+    epic_associations:
+      - "documentation"
+      - "developer-experience"
+
+  - id: performance-engineer
+    name: "Performance Optimization Engineer"
+    description: "Focuses on application performance, optimization, and scalability"
+    capabilities:
+      - "Conduct performance profiling"
+      - "Optimize database queries"
+      - "Implement caching strategies"
+      - "Configure load balancing"
+      - "Set up performance monitoring"
+    recommended_for:
+      - "High-traffic applications"
+      - "Real-time systems"
+      - "Resource-constrained environments"
+    tools_required:
+      - "Profiling tools"
+      - "Load testing frameworks"
+      - "Monitoring systems"
+    epic_associations:
+      - "performance"
+      - "optimization"
+      - "scalability"
+
+  - id: migration-specialist
+    name: "Migration & Modernization Specialist"
+    description: "Handles legacy system migrations and technology upgrades"
+    capabilities:
+      - "Plan migration strategies"
+      - "Implement data migrations"
+      - "Refactor legacy code"
+      - "Set up compatibility layers"
+      - "Manage rollback procedures"
+    recommended_for:
+      - "Legacy modernization projects"
+      - "Platform migrations"
+      - "Technology stack upgrades"
+    tools_required:
+      - "Migration tools"
+      - "Data transformation utilities"
+      - "Version control systems"
+    epic_associations:
+      - "migration"
+      - "modernization"
+      - "refactoring"
+
+  - id: integration-specialist
+    name: "Integration & API Specialist"
+    description: "Manages third-party integrations and API ecosystem"
+    capabilities:
+      - "Implement API integrations"
+      - "Create webhook handlers"
+      - "Manage API gateways"
+      - "Set up event streaming"
+      - "Handle data synchronization"
+    recommended_for:
+      - "Platform ecosystems"
+      - "Multi-service architectures"
+      - "Third-party integrations"
+    tools_required:
+      - "API clients"
+      - "Message brokers"
+      - "Integration platforms"
+    epic_associations:
+      - "integrations"
+      - "api-management"
+      - "external-services"
+
+# Agent Selection Rules
+selection_rules:
+  # Automatically recommend agents based on project characteristics
+  auto_recommendations:
+    - condition: "has_microservices"
+      recommend: ["backend-specialist", "integration-specialist", "devops-engineer"]
+    
+    - condition: "has_ui_components"
+      recommend: ["frontend-specialist", "performance-engineer"]
+    
+    - condition: "has_cloud_infrastructure"
+      recommend: ["devops-engineer", "security-specialist"]
+    
+    - condition: "has_data_processing"
+      recommend: ["data-engineer", "performance-engineer"]
+    
+    - condition: "is_enterprise"
+      recommend: ["security-specialist", "documentation-specialist", "testing-specialist"]
+    
+    - condition: "has_legacy_migration"
+      recommend: ["migration-specialist", "testing-specialist"]
+
+  # Minimum team compositions
+  minimum_teams:
+    small_project:
+      - "backend-specialist"
+      - "frontend-specialist"
+      - "devops-engineer"
+    
+    medium_project:
+      - "backend-specialist"
+      - "frontend-specialist"
+      - "devops-engineer"
+      - "testing-specialist"
+      - "documentation-specialist"
+    
+    large_project:
+      - "backend-specialist"
+      - "frontend-specialist"
+      - "devops-engineer"
+      - "testing-specialist"
+      - "security-specialist"
+      - "data-engineer"
+      - "documentation-specialist"
+      - "performance-engineer"
+
+# Agent Collaboration Patterns
+collaboration_patterns:
+  - pattern: "api-development"
+    agents: ["backend-specialist", "documentation-specialist", "testing-specialist"]
+    description: "Collaborative API development with docs and tests"
+  
+  - pattern: "full-stack-feature"
+    agents: ["backend-specialist", "frontend-specialist", "testing-specialist"]
+    description: "End-to-end feature development"
+  
+  - pattern: "infrastructure-setup"
+    agents: ["devops-engineer", "security-specialist", "performance-engineer"]
+    description: "Complete infrastructure with security and performance"
+  
+  - pattern: "data-platform"
+    agents: ["data-engineer", "backend-specialist", "performance-engineer"]
+    description: "Data processing and analytics platform"
+  
+  - pattern: "migration-project"
+    agents: ["migration-specialist", "testing-specialist", "documentation-specialist"]
+    description: "Safe migration with testing and documentation"
