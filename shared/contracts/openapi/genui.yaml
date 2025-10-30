@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: GenUI Orchestrator API
+  description: Dynamic UI generation service for the KAIZEN platform
+  version: 1.0.0
+  contact:
+    name: KAIZEN Team
+    email: api@kaizen.platform
+
+servers:
+  - url: http://localhost:4000
+    description: Development server
+  - url: https://api.kaizen.platform
+    description: Production server
+
+tags:
+  - name: UI Generation
+    description: Dynamic UI generation endpoints
+  - name: Templates
+    description: UI template management
+  - name: Context
+    description: User context operations
+
+paths:
+  /api/v1/generate:
+    post:
+      tags:
+        - UI Generation
+      summary: Generate dynamic UI
+      description: Generate UI components based on user context and PCM stage
+      operationId: generateUI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateUIRequest'
+      responses:
+        '200':
+          description: Successfully generated UI
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateUIResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/templates:
+    get:
+      tags:
+        - Templates
+      summary: List UI templates
+      description: Get all available UI templates
+      operationId: listTemplates
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemplateList'
+
+    post:
+      tags:
+        - Templates
+      summary: Create UI template
+      description: Create a new UI template
+      operationId: createTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Template'
+      responses:
+        '201':
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+
+  /api/v1/context/{userId}:
+    get:
+      tags:
+        - Context
+      summary: Get user context
+      description: Retrieve user context for UI generation
+      operationId: getUserContext
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserContext'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    GenerateUIRequest:
+      type: object
+      required:
+        - userId
+        - context
+      properties:
+        userId:
+          type: string
+          format: uuid
+        context:
+          $ref: '#/components/schemas/UserContext'
+        preferences:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+
+    GenerateUIResponse:
+      type: object
+      required:
+        - components
+        - layout
+        - pcmStage
+      properties:
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/UIComponent'
+        layout:
+          $ref: '#/components/schemas/Layout'
+        pcmStage:
+          $ref: '#/components/schemas/PCMStage'
+        recommendations:
+          type: array
+          items:
+            type: string
+
+    UIComponent:
+      type: object
+      required:
+        - id
+        - type
+        - props
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [button, card, form, list, modal, chart]
+        props:
+          type: object
+          additionalProperties: true
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/UIComponent'
+        validation:
+          type: object
+          additionalProperties: true
+
+    Layout:
+      type: object
+      required:
+        - type
+        - grid
+      properties:
+        type:
+          type: string
+          enum: [responsive, fixed, fluid]
+        grid:
+          type: array
+          items:
+            type: object
+            properties:
+              x:
+                type: integer
+              y:
+                type: integer
+              w:
+                type: integer
+              h:
+                type: integer
+              component:
+                type: string
+
+    UserContext:
+      type: object
+      required:
+        - userId
+        - pcmStage
+        - preferences
+      properties:
+        userId:
+          type: string
+          format: uuid
+        pcmStage:
+          $ref: '#/components/schemas/PCMStage'
+        preferences:
+          type: object
+          properties:
+            theme:
+              type: string
+            language:
+              type: string
+            accessibility:
+              type: object
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              action:
+                type: string
+              metadata:
+                type: object
+
+    PCMStage:
+      type: string
+      enum:
+        - awareness
+        - attraction
+        - attachment
+        - allegiance
+      description: Psychological Continuum Model stage
+
+    Template:
+      type: object
+      required:
+        - id
+        - name
+        - components
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/UIComponent'
+        pcmStages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PCMStage'
+        tags:
+          type: array
+          items:
+            type: string
+
+    TemplateList:
+      type: object
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Template'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Items per page
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100

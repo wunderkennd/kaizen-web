@@ -1,0 +1,52 @@
+version: '3.9'
+
+# Development overrides for docker-compose.yml
+# This file is automatically loaded by docker-compose in development
+
+services:
+  frontend:
+    environment:
+      NEXT_TELEMETRY_DISABLED: 1
+      WATCHPACK_POLLING: true  # For file watching in containers
+    stdin_open: true
+    tty: true
+
+  genui-orchestrator:
+    environment:
+      GO_ENV: development
+      DEBUG: true
+      LOG_LEVEL: debug
+    command: air -c .air.toml  # Hot reload for Go
+
+  kre-engine:
+    environment:
+      RUST_LOG: debug
+      RUST_BACKTRACE: 1
+    command: cargo watch -x run  # Hot reload for Rust
+
+  user-context:
+    environment:
+      GO_ENV: development
+      DEBUG: true
+      LOG_LEVEL: debug
+    command: air -c .air.toml
+
+  pcm-classifier:
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+      PYTHONUNBUFFERED: 1
+    command: python -m flask run --host=0.0.0.0 --port=4003 --reload
+
+  ai-sommelier:
+    environment:
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+      PYTHONUNBUFFERED: 1
+    command: python -m flask run --host=0.0.0.0 --port=4004 --reload
+
+  streaming-adapter:
+    environment:
+      RUST_LOG: debug
+      RUST_BACKTRACE: 1
+    command: cargo watch -x run
