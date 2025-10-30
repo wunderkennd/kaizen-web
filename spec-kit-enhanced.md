@@ -364,9 +364,126 @@ print("date,remaining_points,completed_points")
 
 ---
 
-## 📋 Phase 8: Maintenance & Updates
+## 📋 Phase 8: Sub-Agent Definition & Creation
 
-### 8.1 Sync Specification Changes
+### 8.1 Agent Analysis Script
+```bash
+#!/bin/bash
+# scripts/analyze-and-create-agents.sh
+
+# Analyze project characteristics
+analyze_project_needs() {
+    echo "Analyzing project requirements for agent recommendations..."
+    
+    # Check for different technology stacks and requirements
+    local has_backend=$(grep -c "API\|backend\|service" specs/*/tasks.md)
+    local has_frontend=$(grep -c "frontend\|UI\|React" specs/*/tasks.md)
+    local has_ml=$(grep -c "ML\|machine learning\|model" specs/*/tasks.md)
+    local has_security=$(grep -c "security\|auth\|compliance" specs/*/tasks.md)
+    
+    # Generate recommendations
+    echo "Recommended agents based on analysis:"
+    [ "$has_backend" -gt 0 ] && echo "  • Backend Development Specialist"
+    [ "$has_frontend" -gt 0 ] && echo "  • Frontend Development Specialist"
+    [ "$has_ml" -gt 0 ] && echo "  • Data & Analytics Engineer"
+    [ "$has_security" -gt 0 ] && echo "  • Security Specialist"
+}
+
+# Interactive agent approval
+approve_agent() {
+    local agent_name="$1"
+    local agent_desc="$2"
+    
+    echo ""
+    echo "Agent: $agent_name"
+    echo "Description: $agent_desc"
+    read -p "Create this agent? (y/n/details): " choice
+    
+    case $choice in
+        y|Y) return 0 ;;
+        n|N) return 1 ;;
+        d|D) 
+            show_agent_details "$agent_name"
+            approve_agent "$agent_name" "$agent_desc"
+            ;;
+    esac
+}
+
+# Main execution
+analyze_project_needs
+
+# Get user approval for each recommended agent
+for agent in "${RECOMMENDED_AGENTS[@]}"; do
+    if approve_agent "$agent"; then
+        create_agent_config "$agent"
+        assign_tasks_to_agent "$agent"
+    fi
+done
+```
+
+### 8.2 Agent Configuration Template
+```yaml
+# agent-config-{agent-id}.yaml
+agent:
+  id: backend-specialist
+  name: "Backend Development Specialist"
+  created: 2024-01-20
+  project: "Project Name"
+  
+capabilities:
+  - API development (REST/GraphQL/gRPC)
+  - Database design and optimization
+  - Business logic implementation
+  - Data modeling and validation
+  
+assigned_epics:
+  - epic:data-layer
+  - epic:core-services
+  - epic:api-development
+  
+task_filters:
+  labels:
+    - backend
+    - api
+    - database
+  keywords:
+    - API
+    - service
+    - endpoint
+    - database
+    - model
+  
+collaboration:
+  primary_collaborators:
+    - frontend-specialist
+    - testing-specialist
+  report_to: project-manager
+  
+performance_metrics:
+  expected_velocity: 20  # story points per week
+  quality_threshold: 95  # percentage
+```
+
+### 8.3 Available Agent Types
+
+| Agent Type | Focus Area | Primary Skills | Recommended For |
+|------------|------------|----------------|-----------------|
+| Backend Specialist | Server-side development | APIs, databases, business logic | All projects with backend |
+| Frontend Specialist | UI/UX implementation | React, state management, responsive design | User-facing applications |
+| DevOps Engineer | Infrastructure & deployment | Terraform, CI/CD, cloud services | Cloud-native projects |
+| Testing Specialist | Quality assurance | TDD, E2E tests, coverage | High-reliability apps |
+| Security Specialist | Security & compliance | Auth, encryption, auditing | Sensitive data handling |
+| Data Engineer | Data & analytics | Pipelines, ML, warehousing | Data-driven applications |
+| Documentation Specialist | Technical writing | Docs, API specs, guides | Open source/enterprise |
+| Performance Engineer | Optimization | Profiling, caching, scaling | High-traffic systems |
+| Migration Specialist | Legacy modernization | Refactoring, compatibility | Legacy upgrades |
+| Integration Specialist | Third-party integrations | APIs, webhooks, events | Platform ecosystems |
+
+---
+
+## 📋 Phase 9: Maintenance & Updates
+
+### 9.1 Sync Specification Changes
 ```bash
 #!/bin/bash
 # scripts/sync-spec-changes.sh
@@ -383,7 +500,7 @@ git diff HEAD~1 specs/*/tasks.md | grep "^+### T" | while read -r line; do
 done
 ```
 
-### 8.2 Weekly Status Update
+### 9.2 Weekly Status Update
 ```bash
 #!/bin/bash
 # scripts/weekly-status.sh

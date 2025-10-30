@@ -1,0 +1,184 @@
+syntax = "proto3";
+
+package kaizen.kre.v1;
+
+option go_package = "github.com/wunderkennd/kaizen-web/pkg/proto/kre/v1";
+
+import "common/types.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// KRE (KAIZEN Rule Engine) Service
+service KREService {
+  // Evaluate rules for a given context
+  rpc EvaluateRules(EvaluateRulesRequest) returns (EvaluateRulesResponse);
+  
+  // Get a specific rule
+  rpc GetRule(GetRuleRequest) returns (Rule);
+  
+  // List all rules
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse);
+  
+  // Create a new rule
+  rpc CreateRule(CreateRuleRequest) returns (Rule);
+  
+  // Update an existing rule
+  rpc UpdateRule(UpdateRuleRequest) returns (Rule);
+  
+  // Delete a rule
+  rpc DeleteRule(DeleteRuleRequest) returns (DeleteRuleResponse);
+  
+  // Stream rule changes
+  rpc StreamRuleChanges(StreamRuleChangesRequest) returns (stream RuleChangeEvent);
+}
+
+// Rule definition
+message Rule {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  RuleType type = 4;
+  repeated Condition conditions = 5;
+  repeated Action actions = 6;
+  int32 priority = 7;
+  bool enabled = 8;
+  repeated string tags = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+// Rule types
+enum RuleType {
+  RULE_TYPE_UNSPECIFIED = 0;
+  RULE_TYPE_UI_GENERATION = 1;
+  RULE_TYPE_PERSONALIZATION = 2;
+  RULE_TYPE_RECOMMENDATION = 3;
+  RULE_TYPE_WORKFLOW = 4;
+  RULE_TYPE_VALIDATION = 5;
+}
+
+// Condition for rule evaluation
+message Condition {
+  string field = 1;
+  Operator operator = 2;
+  google.protobuf.Value value = 3;
+  LogicalOperator logical_operator = 4;
+}
+
+// Operators for conditions
+enum Operator {
+  OPERATOR_UNSPECIFIED = 0;
+  OPERATOR_EQUALS = 1;
+  OPERATOR_NOT_EQUALS = 2;
+  OPERATOR_GREATER_THAN = 3;
+  OPERATOR_LESS_THAN = 4;
+  OPERATOR_GREATER_THAN_OR_EQUALS = 5;
+  OPERATOR_LESS_THAN_OR_EQUALS = 6;
+  OPERATOR_CONTAINS = 7;
+  OPERATOR_NOT_CONTAINS = 8;
+  OPERATOR_IN = 9;
+  OPERATOR_NOT_IN = 10;
+}
+
+// Logical operators
+enum LogicalOperator {
+  LOGICAL_OPERATOR_UNSPECIFIED = 0;
+  LOGICAL_OPERATOR_AND = 1;
+  LOGICAL_OPERATOR_OR = 2;
+}
+
+// Action to perform when rule matches
+message Action {
+  string type = 1;
+  map<string, google.protobuf.Value> parameters = 2;
+}
+
+// Request to evaluate rules
+message EvaluateRulesRequest {
+  kaizen.common.v1.RequestMetadata metadata = 1;
+  kaizen.common.v1.UserContext context = 2;
+  map<string, google.protobuf.Value> facts = 3;
+  repeated string rule_ids = 4; // Optional: specific rules to evaluate
+}
+
+// Response from rule evaluation
+message EvaluateRulesResponse {
+  repeated RuleEvaluation evaluations = 1;
+  repeated Action triggered_actions = 2;
+}
+
+// Individual rule evaluation result
+message RuleEvaluation {
+  string rule_id = 1;
+  bool matched = 2;
+  repeated ConditionEvaluation condition_evaluations = 3;
+  google.protobuf.Timestamp evaluated_at = 4;
+}
+
+// Condition evaluation result
+message ConditionEvaluation {
+  Condition condition = 1;
+  bool matched = 2;
+  string reason = 3;
+}
+
+// Request to get a rule
+message GetRuleRequest {
+  string id = 1;
+}
+
+// Request to list rules
+message ListRulesRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+  repeated string tags = 3;
+  bool enabled_only = 4;
+}
+
+// Response for listing rules
+message ListRulesResponse {
+  repeated Rule rules = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+// Request to create a rule
+message CreateRuleRequest {
+  Rule rule = 1;
+}
+
+// Request to update a rule
+message UpdateRuleRequest {
+  Rule rule = 1;
+  repeated string update_paths = 2; // Field paths to update
+}
+
+// Request to delete a rule
+message DeleteRuleRequest {
+  string id = 1;
+}
+
+// Response for delete operation
+message DeleteRuleResponse {
+  bool success = 1;
+}
+
+// Request for streaming rule changes
+message StreamRuleChangesRequest {
+  repeated string rule_ids = 1; // Optional: specific rules to watch
+  repeated string tags = 2; // Optional: watch rules with these tags
+}
+
+// Rule change event
+message RuleChangeEvent {
+  enum ChangeType {
+    CHANGE_TYPE_UNSPECIFIED = 0;
+    CHANGE_TYPE_CREATED = 1;
+    CHANGE_TYPE_UPDATED = 2;
+    CHANGE_TYPE_DELETED = 3;
+  }
+  
+  ChangeType type = 1;
+  Rule rule = 2;
+  google.protobuf.Timestamp timestamp = 3;
+}

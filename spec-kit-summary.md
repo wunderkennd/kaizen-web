@@ -10,6 +10,7 @@ We've created a comprehensive **Spec-Kit** that transforms project specification
 - **5 Time-boxed Milestones** with due dates
 - **25+ Labels** (priorities, sizes, statuses, epics)
 - **Enriched Issue Descriptions** with user stories and acceptance criteria
+- **10+ Specialized Sub-Agents** with individual approval process
 - **Project Documentation** (roadmaps, epic tracking, progress reports)
 
 ---
@@ -28,7 +29,8 @@ spec-kit-templates/
 ├── 02-extraction/           # Task extraction scripts  
 ├── 03-github-setup/         # GitHub automation
 ├── 04-organization/         # Epic/milestone mapping
-└── 05-reporting/            # Progress tracking
+├── 05-reporting/            # Progress tracking
+└── 06-agents/               # Sub-agent creation system
 ```
 
 ### 3. **Automation Scripts**
@@ -38,6 +40,7 @@ spec-kit-templates/
 - `create-issues.sh` - Bulk issue creation
 - `enrich-issues.sh` - Add context to issues
 - `assign-to-epics.sh` - Organize by epics
+- `create-agents.sh` - Define and approve specialized sub-agents
 - `generate-roadmap.sh` - Create documentation
 
 ---
@@ -76,6 +79,13 @@ epics:
 - **Size labels**: `size:XS` through `size:XL`
 - **Status labels**: `status:*` (blocked, ready, etc.)
 
+### 5. **Intelligent Sub-Agent System**
+- **Project Analysis**: Automatic detection of technology stack and requirements
+- **Agent Recommendations**: AI-powered suggestions based on project needs
+- **Interactive Approval**: User reviews and approves each agent individually
+- **Task Assignment**: Agents assigned to relevant epics and tasks
+- **Collaboration Matrix**: Defines how agents work together
+
 ---
 
 ## 💡 How It Works
@@ -100,6 +110,7 @@ epics:
 - ✅ Organized into epics
 - ✅ Assigned to milestones
 - ✅ Labeled by priority/size
+- ✅ Specialized sub-agents created
 - ✅ Documentation generated
 
 ---

@@ -1,0 +1,93 @@
+version: '3.9'
+
+# Production configuration for docker-compose
+# Use: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+services:
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+
+  redis:
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  frontend:
+    restart: unless-stopped
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    environment:
+      NODE_ENV: production
+
+  genui-orchestrator:
+    restart: unless-stopped
+    build:
+      context: ./services/genui-orchestrator
+      dockerfile: Dockerfile
+    environment:
+      ENV: production
+      LOG_LEVEL: info
+
+  kre-engine:
+    restart: unless-stopped
+    build:
+      context: ./services/kre-engine
+      dockerfile: Dockerfile
+    environment:
+      ENV: production
+      RUST_LOG: info
+
+  user-context:
+    restart: unless-stopped
+    build:
+      context: ./services/user-context-service
+      dockerfile: Dockerfile
+    environment:
+      ENV: production
+      LOG_LEVEL: info
+
+  pcm-classifier:
+    restart: unless-stopped
+    build:
+      context: ./services/pcm-classifier
+      dockerfile: Dockerfile
+    environment:
+      ENV: production
+      GUNICORN_WORKERS: 4
+
+  ai-sommelier:
+    restart: unless-stopped
+    build:
+      context: ./services/ai-sommelier-service
+      dockerfile: Dockerfile
+    environment:
+      ENV: production
+      GUNICORN_WORKERS: 4
+
+  streaming-adapter:
+    restart: unless-stopped
+    build:
+      context: ./services/streaming-adapter
+      dockerfile: Dockerfile
+    environment:
+      ENV: production
+      RUST_LOG: info
+
+  # Remove development tools in production
+  adminer:
+    profiles:
+      - debug
+
+  redis-commander:
+    profiles:
+      - debug
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
