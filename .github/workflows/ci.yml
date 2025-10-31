@@ -188,7 +188,7 @@ jobs:
               echo "Migration up failed"
               exit 1
             }
-            ./scripts/db/migrate.sh down || {
+            ./scripts/db/migrate.sh down 1 || {
               echo "Migration down failed"
               exit 1
             }
