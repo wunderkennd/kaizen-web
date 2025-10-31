@@ -334,8 +334,8 @@ Evaluates adaptation rules in real-time:
 11. Advanced ML (T123-T164)
 
 ### Milestones
-- **Milestone 1**: Core Platform (T001-T098) - Target: Feb 2025
-- **Milestone 2**: A/B Testing (T105-T122) - Target: Mar 2025
+- **Milestone 1**: Core Platform (T001-T080) - Target: Feb 2025
+- **Milestone 2**: A/B Testing (T099-T122) - Target: Mar 2025
 - **Milestone 3**: Multivariate (T123-T164) - Target: Apr 2025
 
 ## Best Practices
