@@ -118,7 +118,7 @@ kaizen-web/
 - Use async/await for I/O operations
 
 **Python:**
-- Use Black + pylint
+- Use Black + pylint + isort
 - Type hints required (PEP 484) with mypy for static type checking
 - Follow PEP 8 style guide
 - Use virtual environments
@@ -433,7 +433,7 @@ kubectl logs <pod-name>          # View pod logs
 - **Project Lead**: Kenneth Sylvain
 - **Organization**: Wunderkennd
 - **Repository**: https://github.com/wunderkennd/kaizen-web
-- **Status**: 🚧 Active Development
+- **Current Status**: Active Development (8/190 tasks completed)
 
 ## Additional Resources
 
