@@ -182,7 +182,7 @@ jobs:
               echo "cpu=2" >> $GITHUB_OUTPUT
               echo "min_instances=1" >> $GITHUB_OUTPUT
               echo "max_instances=20" >> $GITHUB_OUTPUT
-              echo "concurrency=50" >> $GITHUB_OUTPUT
+              echo "concurrency=100" >> $GITHUB_OUTPUT
               ;;
             "kre-engine")
               echo "port=4001" >> $GITHUB_OUTPUT
