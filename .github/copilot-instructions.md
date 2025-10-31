@@ -25,7 +25,7 @@ The platform follows a **microservices architecture** with:
 The following microservices will be implemented in the `services/` directory:
 
 1. **GenUI Orchestrator** (Go) - UI generation orchestrator
-2. **KRE Engine** (Rust) - Rule evaluation engine  
+2. **KRE Engine** (Rust) - Rule evaluation engine
 3. **User Context Service** (Go) - User context management
 4. **AI Sommelier** (Python) - AI recommendations
 5. **PCM Classifier** (Python/Rust) - PCM classification
@@ -119,7 +119,7 @@ kaizen-web/
 
 **Python:**
 - Use Black + pylint
-- Type hints required (PEP 484)
+- Type hints required (PEP 484) with mypy for static type checking
 - Follow PEP 8 style guide
 - Use virtual environments
 
@@ -224,14 +224,17 @@ cp .env.example .env
 
 3. **Install dependencies:**
 ```bash
-# Frontend
+# Frontend (from repository root)
 cd frontend && npm install
 
-# Go services
-cd ../services/genui-orchestrator && go mod download
+# Go services (from repository root)
+cd services/genui-orchestrator && go mod download
 
-# Python services
-cd ../services/ai-sommelier && pip install -r requirements.txt
+# Python services (from repository root)
+cd services/ai-sommelier
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
 4. **Run with Docker Compose:**
