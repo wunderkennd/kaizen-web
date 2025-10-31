@@ -59,7 +59,7 @@ CREATE TYPE conversion_type AS ENUM (
 
 -- Event tracking for comprehensive analytics
 CREATE TABLE events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID DEFAULT uuid_generate_v4(),
     
     -- Event identification
     event_type event_type NOT NULL,
@@ -119,13 +119,16 @@ CREATE TABLE events (
     
     -- Metadata
     client_timestamp TIMESTAMP WITH TIME ZONE,
-    server_timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    server_timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     processed_at TIMESTAMP WITH TIME ZONE,
     
-    -- Indexing optimization
-    event_date DATE GENERATED ALWAYS AS (DATE(server_timestamp)) STORED,
-    event_hour TIMESTAMP GENERATED ALWAYS AS (DATE_TRUNC('hour', server_timestamp)) STORED
-);
+    -- Indexing optimization (using immutable timezone conversion for generated columns)
+    event_date DATE GENERATED ALWAYS AS ((server_timestamp AT TIME ZONE 'UTC')::DATE) STORED,
+    event_hour TIMESTAMP GENERATED ALWAYS AS (DATE_TRUNC('hour', server_timestamp AT TIME ZONE 'UTC') AT TIME ZONE 'UTC') STORED,
+    
+    -- Composite primary key including partition key
+    PRIMARY KEY (id, server_timestamp)
+) PARTITION BY RANGE (server_timestamp);
 
 -- Funnel analysis tracking
 CREATE TABLE funnels (
@@ -461,11 +464,11 @@ CREATE INDEX idx_conversion_goals_criteria_gin ON conversion_goals USING GIN(eve
 CREATE INDEX idx_cohorts_definition_gin ON cohorts USING GIN(definition_criteria);
 CREATE INDEX idx_analytics_snapshots_metrics_gin ON analytics_snapshots USING GIN(metrics);
 
--- Partitioning for events table (by date)
+-- Partitioning for events table (by timestamp)
 CREATE TABLE events_y2024m01 PARTITION OF events
-    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+    FOR VALUES FROM ('2024-01-01 00:00:00+00') TO ('2024-02-01 00:00:00+00');
 CREATE TABLE events_y2024m02 PARTITION OF events
-    FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
+    FOR VALUES FROM ('2024-02-01 00:00:00+00') TO ('2024-03-01 00:00:00+00');
 -- Additional partitions would be created dynamically
 
 -- Updated_at triggers
