@@ -9,11 +9,18 @@ set -euo pipefail
 if [ -n "${DATABASE_URL:-}" ]; then
     # Parse DATABASE_URL if provided (for CI/CD)
     # Format: postgresql://user:password@host:port/database
-    DB_USER=$(echo $DATABASE_URL | sed -n 's/.*:\/\/\([^:]*\).*/\1/p')
-    DB_PASSWORD=$(echo $DATABASE_URL | sed -n 's/.*:\/\/[^:]*:\([^@]*\).*/\1/p')
-    DB_HOST=$(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\).*/\1/p')
-    DB_PORT=$(echo $DATABASE_URL | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
-    DB_NAME=$(echo $DATABASE_URL | sed -n 's/.*\/\([^?]*\).*/\1/p')
+    # Parse DATABASE_URL using bash parameter expansion (no process exposure)
+    url_no_proto="${DATABASE_URL#*://}"                # user:pass@host:port/db
+    creds="${url_no_proto%@*}"                         # user:pass
+    hostportdb="${url_no_proto#*@}"                    # host:port/db
+    DB_USER="${creds%%:*}"                             # user
+    DB_PASSWORD="${creds#*:}"                          # pass
+    hostport="${hostportdb%%/*}"                       # host:port
+    DB_NAME="${hostportdb#*/}"                         # db (may include ?params)
+    DB_NAME="${DB_NAME%%\?*}"                          # strip ?params if present
+    DB_HOST="${hostport%%:*}"                          # host
+    DB_PORT="${hostport#*:}"                           # port
+    if [ "$DB_HOST" = "$hostport" ]; then DB_PORT="5432"; fi  # default port if missing
 else
     # Use individual environment variables
     DB_HOST="${DB_HOST:-localhost}"
