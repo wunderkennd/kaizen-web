@@ -58,7 +58,8 @@ execute_sql_file() {
 # Check if database has data
 check_existing_data() {
     local count
-    count=$(psql "$(get_db_url)" -t -c "SELECT COUNT(*) FROM users WHERE organization_id != '00000000-0000-0000-0000-000000000000';" 2>/dev/null | tr -d ' ' || echo "0")
+    local org_uuid="00000000-0000-0000-0000-000000000000"
+    count=$(psql "$(get_db_url)" -v org_uuid="$org_uuid" -t -c "SELECT COUNT(*) FROM users WHERE organization_id != :'org_uuid';" 2>/dev/null | tr -d ' ' || echo "0")
     echo "$count"
 }
 
