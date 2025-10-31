@@ -7,7 +7,7 @@ KAIZEN is an intelligent, context-aware platform that revolutionizes user experi
 **Key Features:**
 - Dynamic UI Generation: Real-time interface adaptation based on user context and behavior
 - PCM Integration: Tracks users through Awareness → Attraction → Attachment → Allegiance stages
-- ML-Powered Personalization: Advanced recommendation engine (AI Sommelier)
+- ML-Powered Personalization: Advanced recommendation engine for anime content (AI Sommelier)
 - Rule-Based Adaptation: Sophisticated rule engine (KRE) for UI customization
 - A/B Testing Platform: Built-in experimentation framework
 - Multi-Armed Bandits: Advanced optimization algorithms for continuous improvement
@@ -27,8 +27,8 @@ The following microservices will be implemented in the `services/` directory:
 1. **GenUI Orchestrator** (Go) - UI generation orchestrator
 2. **KRE Engine** (Rust) - Rule evaluation engine
 3. **User Context Service** (Go) - User context management
-4. **AI Sommelier** (Python) - AI recommendations
-5. **PCM Classifier** (Python/Rust) - PCM classification
+4. **AI Sommelier** (Python) - AI-powered anime recommendations
+5. **PCM Classifier** (Python with optional Rust optimization) - PCM stage classification
 6. **Streaming Adapter** (Rust) - WebSocket/SSE adapter
 7. **Experiment Service** (Go) - A/B testing platform
 8. **Bandit Service** (Python) - Multi-armed bandits
@@ -227,15 +227,17 @@ cp .env.example .env
 # Frontend (from repository root)
 cd frontend && npm install
 
-# Go services (from repository root)
+# Go services (from repository root - once services exist)
 cd services/genui-orchestrator && go mod download
 
-# Python services (from repository root)
+# Python services (from repository root - once services exist)
 cd services/ai-sommelier
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+**Note**: Backend services are currently being scaffolded. Use the commands above once service directories are created.
 
 4. **Run with Docker Compose:**
 ```bash
