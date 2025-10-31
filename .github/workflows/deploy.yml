@@ -298,7 +298,7 @@ jobs:
           
           # Retry health check up to 5 times
           for i in {1..5}; do
-            if curl -f "$HEALTH_URL" --connect-timeout 10 --max-time 30; then
+            if curl -f -v -w "\nHTTP Status: %{http_code}\nTotal Time: %{time_total}s\n" "$HEALTH_URL" --connect-timeout 10 --max-time 30; then
               echo "Health check passed for ${{ matrix.service }}"
               exit 0
             else
@@ -413,10 +413,10 @@ jobs:
         run: |
           # Basic API health checks
           echo "Testing API health endpoint..."
-          curl -f "${{ steps.urls.outputs.api_url }}/health" || exit 1
+          curl -f -v -w "\nHTTP Status: %{http_code}\nTotal Time: %{time_total}s\n" "${{ steps.urls.outputs.api_url }}/health" || exit 1
           
           echo "Testing API metrics endpoint..."
-          curl -f "${{ steps.urls.outputs.api_url }}/metrics" || exit 1
+          curl -f -v -w "\nHTTP Status: %{http_code}\nTotal Time: %{time_total}s\n" "${{ steps.urls.outputs.api_url }}/metrics" || exit 1
           
           # Run Postman collection if available
           if [ -f "tests/postman/smoke-tests.json" ]; then
