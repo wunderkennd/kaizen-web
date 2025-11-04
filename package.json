@@ -1,0 +1,46 @@
+{
+  "name": "kaizen-web",
+  "version": "0.1.0",
+  "description": "KAIZEN Adaptive Platform",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:integration": "jest --config jest.integration.config.js",
+    "test:go": "cd packages/go-shared && go test ./...",
+    "test:rust": "cd packages/rust-shared && cargo test",
+    "test:python": "cd packages/python-shared && python -m pytest tests/",
+    "test:all": "npm run test:go && npm run test:rust && npm run test:python && npm run test",
+    "test:posthog": "npm run test:go && npm run test:rust && npm run test:python && npm run test -- --testPathPattern=posthog",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "docker:posthog:up": "docker-compose -f docker-compose.posthog.yml up -d",
+    "docker:posthog:down": "docker-compose -f docker-compose.posthog.yml down",
+    "docker:posthog:logs": "docker-compose -f docker-compose.posthog.yml logs -f"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/react-hooks": "^8.0.1",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "axios": "^1.6.0",
+    "eslint": "^8.50.0",
+    "eslint-config-prettier": "^9.0.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.2.0",
+    "uuid": "^9.0.0"
+  },
+  "dependencies": {
+    "posthog-js": "^1.96.0"
+  }
+}

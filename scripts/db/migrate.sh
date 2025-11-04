@@ -294,6 +294,8 @@ migrate_up() {
     else
         log_success "Applied $applied_count migration(s)"
     fi
+    
+    return 0
 }
 
 # Migrate down by count or to specific version
@@ -356,6 +358,8 @@ migrate_down() {
     else
         log_success "Rolled back $rollback_count migration(s)"
     fi
+    
+    return 0
 }
 
 # Show help
