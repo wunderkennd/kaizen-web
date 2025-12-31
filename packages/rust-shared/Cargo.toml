@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # PostHog analytics
-posthog-rs = "0.2"
+posthog-rs = "0.2.2"
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }

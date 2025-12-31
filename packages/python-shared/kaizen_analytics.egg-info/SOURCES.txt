@@ -1,0 +1,12 @@
+README.md
+setup.py
+kaizen_analytics/__init__.py
+kaizen_analytics/client.py
+kaizen_analytics/decorators.py
+kaizen_analytics.egg-info/PKG-INFO
+kaizen_analytics.egg-info/SOURCES.txt
+kaizen_analytics.egg-info/dependency_links.txt
+kaizen_analytics.egg-info/requires.txt
+kaizen_analytics.egg-info/top_level.txt
+tests/test_client.py
+tests/test_decorators.py

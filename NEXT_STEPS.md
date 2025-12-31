@@ -1,13 +1,40 @@
 # Next Implementation Steps for KAIZEN Platform
 
 ## Current Status
-- ✅ Infrastructure setup (Docker, migrations) - T001-T015
-- ✅ PostHog analytics integration - Complete
-- ⏳ Contract tests - T016-T025 (Next priority)
-- ⏳ Core services - T037-T050
-- ⏳ Frontend components - T051-T057
+- ✅ Infrastructure setup (Docker) - T001-T009
+- 🔴 **CRITICAL**: Test environment is broken across all languages (Go, Rust, Python, TS).
+- 🔴 **BLOCKER**: Shared libraries (`packages/*`) are failing to compile/link.
+- ⏳ Contract tests - T016-T025 (Blocked by test env)
+- ⏳ Core services - T037-T050 (Blocked by migrations)
 
 ## Immediate Next Steps (Priority Order)
+
+### 1. 🛠️ Fix Test Environment (Phase 1.5)
+**Why**: We cannot verify any new code until the build is green.
+
+```bash
+# Required Actions
+1. Fix Go modules in packages/go-shared (missing go.sum)
+2. Fix Rust compilation errors in packages/rust-shared (type mismatches)
+3. Install Python dev dependencies in packages/python-shared
+4. Install root Node dependencies (Jest missing)
+```
+
+### 2. 🛡️ Implement Pre-commit Hooks
+**Why**: Prevent future regressions of the build environment.
+
+- Add `.pre-commit-config.yaml`
+- Configure linting for Polyglot stack (Rust/Go/Python/TS)
+
+### 3. 🗄️ Implement Database Migrations [T011-T015]
+**Why**: Core services need a schema to write to.
+
+- Create `migrations/` SQL files
+- Verify with `make db-migrate`
+
+### 4. 📝 Contract Tests [T016-T025]
+**Why**: Define API contracts before implementation.
+
 
 ### 1. 🧪 Test PostHog Integration (1-2 days)
 **Why**: Ensure analytics work before building features that depend on them

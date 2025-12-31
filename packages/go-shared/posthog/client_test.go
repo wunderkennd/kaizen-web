@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/posthog/posthog-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/posthog/posthog-go"
 )
 
 // MockPostHogClient mocks the PostHog client interface
@@ -26,6 +26,46 @@ func (m *MockPostHogClient) Enqueue(msg posthog.Message) error {
 }
 
 func (m *MockPostHogClient) Close() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockPostHogClient) GetAllFlags(payload posthog.FeatureFlagPayloadNoKey) (map[string]interface{}, error) {
+	args := m.Called(payload)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
+}
+
+func (m *MockPostHogClient) GetFeatureFlag(payload posthog.FeatureFlagPayload) (interface{}, error) {
+	args := m.Called(payload)
+	return args.Get(0), args.Error(1)
+}
+
+func (m *MockPostHogClient) GetFeatureFlagPayload(payload posthog.FeatureFlagPayload) (string, error) {
+	args := m.Called(payload)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockPostHogClient) IsFeatureEnabled(payload posthog.FeatureFlagPayload) (interface{}, error) {
+	args := m.Called(payload)
+	return args.Get(0), args.Error(1)
+}
+
+func (m *MockPostHogClient) GetFeatureFlags() ([]posthog.FeatureFlag, error) {
+	args := m.Called()
+	return args.Get(0).([]posthog.FeatureFlag), args.Error(1)
+}
+
+func (m *MockPostHogClient) GetLastCapturedEvent() *posthog.Capture {
+	args := m.Called()
+	return args.Get(0).(*posthog.Capture)
+}
+
+func (m *MockPostHogClient) GetRemoteConfigPayload(key string) (string, error) {
+	args := m.Called(key)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockPostHogClient) ReloadFeatureFlags() error {
 	args := m.Called()
 	return args.Error(0)
 }
@@ -51,6 +91,9 @@ func TestNewClient(t *testing.T) {
 			name: "disabled client",
 			config: Config{
 				Enabled: false,
+			},
+			envVars: map[string]string{
+				"POSTHOG_ENABLED": "false",
 			},
 			wantErr: false,
 		},
@@ -110,7 +153,7 @@ func TestClient_TrackPCMTransition(t *testing.T) {
 
 	assert.NoError(t, err)
 	mockPH.AssertCalled(t, "Enqueue", mock.Anything)
-	
+
 	// Verify the event properties
 	assert.Equal(t, 1, len(mockPH.Events))
 	event := mockPH.Events[0]
@@ -152,7 +195,7 @@ func TestClient_TrackServiceMetric(t *testing.T) {
 
 	assert.NoError(t, err)
 	mockPH.AssertCalled(t, "Enqueue", mock.Anything)
-	
+
 	// Verify system distinct ID
 	assert.Equal(t, 1, len(mockPH.Events))
 	event := mockPH.Events[0]
@@ -189,7 +232,7 @@ func TestClient_TrackExperiment(t *testing.T) {
 
 	assert.NoError(t, err)
 	mockPH.AssertCalled(t, "Enqueue", mock.Anything)
-	
+
 	// Verify experiment event
 	assert.Equal(t, 1, len(mockPH.Events))
 	event := mockPH.Events[0]

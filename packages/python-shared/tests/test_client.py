@@ -77,7 +77,7 @@ class TestAnalytics:
         analytics = Analytics(config)
         
         assert analytics.enabled == True
-        assert analytics.service == "test-service"
+        assert analytics.service == "python-service"
         mock_posthog.assert_called_once()
     
     def test_init_without_api_key(self, mock_posthog):

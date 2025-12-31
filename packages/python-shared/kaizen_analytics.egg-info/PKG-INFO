@@ -1,0 +1,80 @@
+Metadata-Version: 2.4
+Name: kaizen-analytics
+Version: 0.1.0
+Summary: PostHog analytics integration for Kaizen platform services
+Home-page: https://github.com/wunderkennd/kaizen-web
+Author: Kaizen Platform Team
+Author-email: team@kaizen-platform.com
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: posthog>=3.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: pytest-env>=0.8.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: flake8>=6.0.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# Kaizen Analytics
+
+PostHog analytics integration for Kaizen platform Python services.
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Usage
+
+```python
+from kaizen_analytics import Analytics, PCMStage
+
+# Initialize analytics
+analytics = Analytics()
+
+# Track PCM transition
+analytics.track_pcm_transition(
+    user_id="user123",
+    from_stage=PCMStage.AWARENESS,
+    to_stage=PCMStage.ATTRACTION,
+    trigger="viewed_content",
+    properties={"content_id": "anime_456"}
+)
+
+# Track custom event
+analytics.track_event(
+    user_id="user123",
+    event_name="recommendation_generated",
+    properties={"count": 10}
+)
+```
+
+## Configuration
+
+Set environment variables:
+- `POSTHOG_PROJECT_API_KEY`: Your PostHog API key
+- `POSTHOG_HOST`: PostHog host URL
+- `SERVICE_NAME`: Name of your service
+- `POSTHOG_ENABLED`: Enable/disable tracking
